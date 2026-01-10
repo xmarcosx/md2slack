@@ -1,7 +1,7 @@
 # md2slack
 
 <p align="center">
-  <img src="logo.png" alt="md2slack logo" width="200">
+  <img src="logo.png" alt="md2slack logo" width="500">
 </p>
 
 A CLI tool for posting formatted markdown updates to Slack threads.
