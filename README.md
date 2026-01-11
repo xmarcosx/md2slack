@@ -44,7 +44,7 @@ uv sync
 If you use 1Password, you can run commands with token injection:
 
 ```bash
-op run -- md2slack post -t "https://..." update.md
+op run --env-file="op-env-refs" -- md2slack post -t "https://..." update.md
 ```
 
 ## Usage
