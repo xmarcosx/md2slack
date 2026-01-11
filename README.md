@@ -18,12 +18,6 @@ md2slack handles the conversion and posting in one command.
 ## Installation
 
 ```bash
-uv pip install md2slack
-```
-
-Or install from source:
-
-```bash
 git clone https://github.com/yourusername/md2slack.git
 cd md2slack
 uv sync
