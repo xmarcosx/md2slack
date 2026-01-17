@@ -139,7 +139,13 @@ class SlackMrkdwnRenderer(HTMLRenderer):
         return "---\n\n"
 
     def inline_html(self, html: str) -> str:
-        """Pass through inline HTML."""
+        """Convert <br> to placeholder for newline, pass through other HTML.
+
+        Uses \\x01 as placeholder because table parsing splits on \\n.
+        The placeholder is converted back to \\n when creating TableCell objects.
+        """
+        if re.match(r"<br\s*/?>", html, re.IGNORECASE):
+            return "\x01"  # Placeholder for newline (converted in table())
         return html
 
     def block_html(self, html: str) -> str:
@@ -169,13 +175,19 @@ class SlackMrkdwnRenderer(HTMLRenderer):
         rows_data = []
         header_data = []
 
+        def process_cell(content: str, is_header: bool = False) -> TableCell:
+            """Process cell content: strip formatting and convert placeholders."""
+            # Convert \x01 placeholder back to newline (from <br> tags)
+            content = _strip_mrkdwn_formatting(content.strip()).replace("\x01", "\n")
+            return TableCell(content, is_header=is_header)
+
         for line in text.strip().split("\n"):
             if not line:
                 continue
             if line.startswith("HEADER:"):
                 cells = line[7:].split("\x00")
                 header_data = [
-                    TableCell(_strip_mrkdwn_formatting(c.strip()), is_header=True)
+                    process_cell(c, is_header=True)
                     for c in cells
                     if c.strip()
                 ]
@@ -184,7 +196,7 @@ class SlackMrkdwnRenderer(HTMLRenderer):
                 rows_data.append(
                     TableRow(
                         [
-                            TableCell(_strip_mrkdwn_formatting(c.strip()))
+                            process_cell(c)
                             for c in cells
                             if c.strip()
                         ]

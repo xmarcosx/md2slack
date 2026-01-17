@@ -188,6 +188,78 @@ class TestRenderTable:
         assert "\u2502" in result  # vertical bar
 
 
+# Test multi-line cell rendering
+class TestMultiLineCells:
+    """Test rendering of multi-line cells."""
+
+    def test_multiline_cell_in_data_row(self):
+        """Multi-line cell renders all lines with proper alignment."""
+        from md2slack.tables import Table, TableCell, TableRow, render_table
+
+        headers = TableRow([
+            TableCell("Col A", is_header=True),
+            TableCell("Col B", is_header=True),
+        ])
+        rows = [TableRow([TableCell("Line1\nLine2"), TableCell("Single")])]
+        table = Table(headers=headers, rows=rows)
+
+        result = render_table(table)
+        lines = result.strip().split("\n")
+
+        # Should have: top border, header, separator, data line 1, data line 2, bottom border
+        assert len(lines) == 6
+        # Check that "Line1" and "Line2" appear on separate lines
+        assert "Line1" in lines[3]
+        assert "Line2" in lines[4]
+        # Check that "Single" appears only on first line, second line has empty
+        assert "Single" in lines[3]
+        # lines[4] should have blank space where "Single" cell is (padded)
+        assert "│" in lines[4]
+
+    def test_multiline_cell_mixed_heights(self):
+        """Rows with cells of different heights render correctly."""
+        from md2slack.tables import Table, TableCell, TableRow, render_table
+
+        headers = TableRow([
+            TableCell("A", is_header=True),
+            TableCell("B", is_header=True),
+        ])
+        rows = [
+            TableRow([TableCell("One\nTwo\nThree"), TableCell("X")]),
+            TableRow([TableCell("Single"), TableCell("Y")]),
+        ]
+        table = Table(headers=headers, rows=rows)
+
+        result = render_table(table)
+        lines = result.strip().split("\n")
+
+        # Should have: top, header, sep, 3 lines for first row, 1 line for second row, bottom
+        assert len(lines) == 8
+        assert "One" in lines[3]
+        assert "Two" in lines[4]
+        assert "Three" in lines[5]
+        assert "Single" in lines[6]
+
+    def test_multiline_header(self):
+        """Multi-line headers render correctly."""
+        from md2slack.tables import Table, TableCell, TableRow, render_table
+
+        headers = TableRow([
+            TableCell("Header\nLine 2", is_header=True),
+            TableCell("B", is_header=True),
+        ])
+        rows = [TableRow([TableCell("Data"), TableCell("X")])]
+        table = Table(headers=headers, rows=rows)
+
+        result = render_table(table)
+        lines = result.strip().split("\n")
+
+        # Should have: top, header line 1, header line 2, sep, data, bottom
+        assert len(lines) == 6
+        assert "Header" in lines[1]
+        assert "Line 2" in lines[2]
+
+
 # T038: Test full table conversion via convert()
 class TestTableConversion:
     """Test table conversion through the full convert() pipeline."""

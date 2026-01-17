@@ -162,6 +162,35 @@ def _render_separator(
     return left + mid.join(segments) + right
 
 
+def _render_multiline_row(row: TableRow, widths: list[int], box: BoxChars) -> list[str]:
+    """Render a row that may contain multi-line cells.
+
+    Args:
+        row: The row to render.
+        widths: Column widths.
+        box: Box-drawing character set.
+
+    Returns:
+        List of rendered lines for this row.
+    """
+    height = row.height
+    output_lines = []
+
+    for line_idx in range(height):
+        line_contents = []
+        for i, cell in enumerate(row.cells):
+            cell_lines = cell.lines
+            # Get this line of the cell, or empty string if cell is shorter
+            content = cell_lines[line_idx] if line_idx < len(cell_lines) else ""
+            line_contents.append(content)
+        # Pad with empty strings if row has fewer cells than columns
+        while len(line_contents) < len(widths):
+            line_contents.append("")
+        output_lines.append(_render_row_line(line_contents, widths, box))
+
+    return output_lines
+
+
 # T044: render_table function
 def render_table(table: Table, box: BoxChars = LIGHT_BOX) -> str:
     """Render a table with box-drawing characters.
@@ -179,20 +208,15 @@ def render_table(table: Table, box: BoxChars = LIGHT_BOX) -> str:
     # Top border
     lines.append(_render_separator(widths, box.top_left, box.top_t, box.top_right, box))
 
-    # Header row
-    header_contents = [cell.content for cell in table.headers.cells]
-    lines.append(_render_row_line(header_contents, widths, box))
+    # Header row (may be multi-line)
+    lines.extend(_render_multiline_row(table.headers, widths, box))
 
     # Header separator
     lines.append(_render_separator(widths, box.left_t, box.cross, box.right_t, box))
 
-    # Data rows
+    # Data rows (may be multi-line)
     for row in table.rows:
-        row_contents = [cell.content for cell in row.cells]
-        # Pad with empty strings if row has fewer cells
-        while len(row_contents) < len(widths):
-            row_contents.append("")
-        lines.append(_render_row_line(row_contents, widths, box))
+        lines.extend(_render_multiline_row(row, widths, box))
 
     # Bottom border
     lines.append(

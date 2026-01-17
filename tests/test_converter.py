@@ -200,3 +200,69 @@ class TestEdgeCases:
         """Markdown inside inline code is not converted."""
         result = convert("`**not bold**`")
         assert "`**not bold**`" in result
+
+
+# Test <br> tag support in tables
+class TestBrTagSupport:
+    """Test <br> tag conversion to newlines."""
+
+    def test_br_tag_converts_to_placeholder(self):
+        """<br> tag converts to placeholder character."""
+        from md2slack.converter import SlackMrkdwnRenderer
+
+        renderer = SlackMrkdwnRenderer()
+        # Uses \x01 as placeholder (converted to \n in table processing)
+        assert renderer.inline_html("<br>") == "\x01"
+
+    def test_br_tag_self_closing(self):
+        """<br/> tag converts to placeholder."""
+        from md2slack.converter import SlackMrkdwnRenderer
+
+        renderer = SlackMrkdwnRenderer()
+        assert renderer.inline_html("<br/>") == "\x01"
+
+    def test_br_tag_with_space(self):
+        """<br /> tag converts to placeholder."""
+        from md2slack.converter import SlackMrkdwnRenderer
+
+        renderer = SlackMrkdwnRenderer()
+        assert renderer.inline_html("<br />") == "\x01"
+
+    def test_br_tag_uppercase(self):
+        """<BR> tag converts to placeholder (case insensitive)."""
+        from md2slack.converter import SlackMrkdwnRenderer
+
+        renderer = SlackMrkdwnRenderer()
+        assert renderer.inline_html("<BR>") == "\x01"
+
+    def test_other_html_passes_through(self):
+        """Other HTML tags pass through unchanged."""
+        from md2slack.converter import SlackMrkdwnRenderer
+
+        renderer = SlackMrkdwnRenderer()
+        assert renderer.inline_html("<span>") == "<span>"
+
+    def test_table_with_br_tags(self):
+        """Table with <br> tags renders multi-line cells."""
+        md = """| Col A        | Col B  |
+|--------------|--------|
+| Line1<br>Line2 | Single |"""
+        result = convert(md)
+
+        # Should be in code block
+        assert "```" in result
+        # Both lines should appear (the <br> creates multi-line cell)
+        assert "Line1" in result
+        assert "Line2" in result
+        assert "Single" in result
+
+    def test_table_with_br_self_closing(self):
+        """Table with <br/> tags renders multi-line cells."""
+        md = """| A     | B |
+|-------|---|
+| X<br/>Y | Z |"""
+        result = convert(md)
+
+        assert "X" in result
+        assert "Y" in result
+        assert "Z" in result
